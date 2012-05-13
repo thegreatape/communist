@@ -1,0 +1,17 @@
+#!/usr/bin/ruby
+
+options = {
+  :user => 'tmayfield',
+  :server => 'zen-hacking.com'
+}
+
+command = ARGV.shift
+case command
+when 'listen'
+ `ssh -nNT -R 2222:localhost:22 #{options[:user]}@#{options[:server]}`
+when 'join'
+  Kernel.exec "ssh -t #{options[:user]}@#{options[:server]} \"ssh -t #{options[:user]}@localhost -p 2222 wemux\""
+else 
+  puts "omfg doin' wrong"
+end
+
