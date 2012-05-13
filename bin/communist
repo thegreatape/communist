@@ -1,16 +1,26 @@
 #!/usr/bin/ruby
 
-options = {
+@options = {
   :user => 'tmayfield',
   :server => 'zen-hacking.com'
 }
 
+
+def get_available_port
+  puts "finding available port... "
+  port = 2222
+  port += 1 while `ssh #{@options[:user]}@#{@options[:server]} "sudo lsof -iTCP:#{port}"` != ""
+  puts "using port #{port}"
+  port
+end
+
 command = ARGV.shift
 case command
 when 'listen'
- `ssh -nNT -R 2222:localhost:22 #{options[:user]}@#{options[:server]}`
+  port = get_available_port
+ `ssh -nNT -R #{port}:localhost:22 #{@options[:user]}@#{@options[:server]}`
 when 'join'
-  Kernel.exec "ssh -t #{options[:user]}@#{options[:server]} \"ssh -t #{options[:user]}@localhost -p 2222 wemux\""
+  Kernel.exec "ssh -t #{@options[:user]}@#{@options[:server]} \"ssh -t #{@options[:user]}@localhost -p 2222 wemux\""
 else 
   puts "omfg doin' wrong"
 end
