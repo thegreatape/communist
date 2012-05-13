@@ -5,22 +5,38 @@
   :server => 'zen-hacking.com'
 }
 
+def server 
+  "#{@options[:user]}@#{@options[:server]}"
+end
+
+def auth_setup?
+  `ssh -o PasswordAuthentication=no #{server} "echo yup"` =~ /yup/
+end
+
+def push_keypair
+  `cat ~/.ssh/id_rsa.pub | ssh #{server} 'cat >> .ssh/authorized_keys'`
+end
 
 def get_available_port
   puts "finding available port... "
   port = 2222
-  port += 1 while `ssh #{@options[:user]}@#{@options[:server]} "sudo lsof -iTCP:#{port}"` != ""
+  port += 1 while `ssh #{server} "sudo lsof -iTCP:#{port}"` != ""
   puts "using port #{port}"
   port
+end
+
+unless auth_setup?
+  puts "Adding ~/.ssh/id_rsa.pub to #{server}:~/.ssh/authorized_keys ..."
+  push_keypair
 end
 
 command = ARGV.shift
 case command
 when 'listen'
   port = get_available_port
- `ssh -nNT -R #{port}:localhost:22 #{@options[:user]}@#{@options[:server]}`
+ `ssh -nNT -R #{port}:localhost:22 #{server}`
 when 'join'
-  Kernel.exec "ssh -t #{@options[:user]}@#{@options[:server]} \"ssh -t #{@options[:user]}@localhost -p 2222 wemux\""
+  Kernel.exec "ssh -t #{server} \"ssh -t #{@options[:user]}@localhost -p 2222 wemux\""
 else 
   puts "omfg doin' wrong"
 end
