@@ -15,6 +15,17 @@ def push_keypair
   `cat ~/.ssh/id_rsa.pub | ssh #{server} 'cat >> .ssh/authorized_keys'`
 end
 
+def get_port_by_user(user)
+  puts "fetching pid"
+  pid_fetcher= %Q{ssh #{server} "sudo netstat -tpln | grep 127.0.0.1.*sshd | awk '{split(\\$0,a,\\" \\"); print a[7];}' | awk '{split(\\$0,a,\\"/\\"); print a[1];}' | xargs ps h | grep #{user} | awk '{split(\\$0,a,\\" \\"); print a[1];}'"}
+  pid = `#{pid_fetcher}`.chomp
+  puts "got #{pid}, fetching port"
+  port_fetcher = %Q{ ssh #{server} "sudo lsof -i | grep #{pid}.*IPv4.*LISTEN | awk '{split(\\$0,a,\\" \\"); print a[9];}' | awk '{split(\\$0,a,\\":\\"); print a[2];}' "}
+  port = `#{port_fetcher}`
+  puts "got port #{port}"
+  port.chomp
+end
+
 def get_available_port
   puts "finding available port... "
   port = 2222
@@ -43,6 +54,10 @@ def load_options
   end
 end
 
+def usage 
+  puts "omfg doin' wrong"
+end
+
 load_options
 
 unless auth_configured?
@@ -56,8 +71,23 @@ when 'listen'
   port = get_available_port
  `ssh -nNT -R #{port}:localhost:22 #{server}`
 when 'join'
-  Kernel.exec "ssh -t #{server} \"ssh -t #{@options[:user]}@localhost -p 2222 wemux\""
+  user = ARGV.shift
+  if user.nil?
+    puts "User to connect to is required."
+    usage
+    exit
+  end
+
+  port = get_port_by_user(user)
+  if port.empty?
+    puts "Couldn't find listening port for user #{user}"
+    exit
+  end
+
+  cmd = "ssh -t #{server} \"ssh -t #{@options[:user]}@localhost -p #{port} wemux\""
+  puts cmd
+  Kernel.exec cmd
 else 
-  puts "omfg doin' wrong"
+  usage
 end
 
