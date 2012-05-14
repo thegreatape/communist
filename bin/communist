@@ -1,15 +1,13 @@
 #!/usr/bin/ruby
+require 'yaml'
 
-@options = {
-  :user => 'tmayfield',
-  :server => 'zen-hacking.com'
-}
+CONFIG_PATH = File.expand_path("~/.communist.yml")
 
 def server 
   "#{@options[:user]}@#{@options[:server]}"
 end
 
-def auth_setup?
+def auth_configured?
   `ssh -o PasswordAuthentication=no #{server} "echo yup"` =~ /yup/
 end
 
@@ -25,7 +23,29 @@ def get_available_port
   port
 end
 
-unless auth_setup?
+def init_options
+  puts "Looks like you've just installed communist. Let's get you set up, comrade."
+  options = {}
+  print "Hostname of shared server: "
+  options[:server] = gets.chomp
+  print "Username you'll use to connect to shared server: "
+  options[:user] = gets.chomp
+
+  File.open(CONFIG_PATH, 'w+') {|f| f.write(YAML::dump(options)) }
+  load_options
+end
+
+def load_options
+  if File.exists?(CONFIG_PATH)
+    @options = YAML::load(IO.read(CONFIG_PATH)) 
+  else
+    init_options
+  end
+end
+
+load_options
+
+unless auth_configured?
   puts "Adding ~/.ssh/id_rsa.pub to #{server}:~/.ssh/authorized_keys ..."
   push_keypair
 end

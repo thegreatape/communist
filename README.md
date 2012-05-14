@@ -12,7 +12,6 @@ The bridge server should allow sudo access for `lsof` and `netstat` for the user
 
 Everything. Communist is in the proof-of-concept stage right now. Specifically:
 
-* Walk-through setup of username and bridge server config
 * Automatically launch wemux upon begin of listening and connection to remote machine 
 * Better usage and config from command-line
 
